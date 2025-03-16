@@ -1,0 +1,15 @@
+langchain-ollama
+langchain_ollama
+langchain_community
+langchain_chroma
+
+onnxruntime==1.15.1 
+pypdf
+
+flask
+
+apscheduler
+
+duckduckgo_search
+
+pysqlite3-binary
