@@ -8,12 +8,12 @@ pid=$!
 # Pause for Ollama to start.
 sleep 5
 
-echo " Retrieve llama3.2 model..."
-ollama pull llama3.2
+echo " Retrieve $MODEL_MAIN model..."
+ollama pull $MODEL_MAIN
 echo " Done!"
 
-echo " Retrieve nomic-embed-text model..."
-ollama pull nomic-embed-text
+echo " Retrieve $MODEL_EMBEDDING model..."
+ollama pull $MODEL_EMBEDDING
 echo " Done!"
 
 # Wait for Ollama process to finish.

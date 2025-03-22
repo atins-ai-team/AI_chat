@@ -263,7 +263,7 @@ if __name__ == "__main__":
 
 
     #Initialize model
-    model = OllamaLLM(model="llama3.2", base_url =  main_program.main_prog.get_ollama_url())
+    model = OllamaLLM(model= main_program.main_prog.get_model_main(), base_url =  main_program.main_prog.get_ollama_url())
 
     ####
     retriever = db.as_retriever(

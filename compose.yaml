@@ -1,8 +1,8 @@
 name: AI_chat
 
 networks:
-  ai_chat_network:  # Definicja sieci
-    driver: bridge
+    ai_chat_network:  # Definicja sieci
+        driver: bridge
 
 volumes:
     ollama:
@@ -10,6 +10,18 @@ volumes:
 services:
 
     ollama:
+        container_name: ollama
+        image: ollama/ollama
+        entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
+        networks:
+            - ai_chat_network
+        volumes:
+            - ollama:/root/.ollama
+            - ./ollama/entrypoint.sh:/entrypoint.sh
+        ports:
+            - 11434:11434
+        env_file:
+            - 'models.env'
         deploy:
             resources:
                 reservations:
@@ -18,19 +30,12 @@ services:
                           count: all
                           capabilities:
                               - gpu
-        volumes:
-            - ollama:/root/.ollama
-            - ./ollama/entrypoint.sh:/entrypoint.sh
-        ports:
-            - 11434:11434
-        container_name: ollama
-        image: ollama/ollama
+
+        
         pull_policy: always
         tty: true
         restart: always
-        entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
-        networks:
-            - ai_chat_network
+        
     
     ai_api:
         container_name: ai_api
@@ -40,9 +45,13 @@ services:
             - 8001:8001
         environment:
             - ollama_url=http://ollama:11434
+        env_file:
+            - 'models.env'
         build:
             context: ./API
             dockerfile: Dockerfile
         networks:
             - ai_chat_network
-
+        tty: true
+        volumes:
+            - ./API:/python-docker
