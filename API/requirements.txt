@@ -13,3 +13,5 @@ apscheduler
 duckduckgo_search
 
 pysqlite3-binary
+
+flask-cors

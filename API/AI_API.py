@@ -30,11 +30,12 @@ from duckduckgo_search import DDGS
 
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda
+from flask_cors import CORS
 
 
 
 app = Flask(__name__)
-
+CORS(app)
 
 CHROMA_PATH = "chroma"
 HISTORY_SIZE = 12
