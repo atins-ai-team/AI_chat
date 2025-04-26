@@ -52,3 +52,13 @@ services:
     tty: true
     volumes:
       - ./API:/python-docker
+
+  frontend:
+    depends_on:
+      - ai_api
+    build:
+      context: ./Front
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    container_name: chatatins-front

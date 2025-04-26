@@ -21,7 +21,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever
 from get_embedding_function import get_embedding_function
 
-from flask import Flask, request
+from flask import Flask, request, Response,  stream_with_context
 
 import time
 import atexit
@@ -209,19 +209,66 @@ def query_rag(query_text: str, ip, user, id):
 @app.route('/query_AI', methods=['GET', 'POST'])
 def query_AI():
     #if  request.remote_addr in ALLOWED_IPS:
-        query = request.json["query"]
-        id = request.json["id"]
-        user = request.json["user"]
+        # query = request.json["query"]
+        # id = request.json["id"]
+        # user = request.json["user"]
         
-        response = query_rag(query, request.remote_addr, user, id)
+        # response = query_rag(query, request.remote_addr, user, id)
 
-        print ("*******************************************")
-        print ("["+request.remote_addr+"_"+str(id)+"]")
-        print (query)
-        print ("")
-        print (response)
-        print ("*******************************************")
-        return response
+        # print ("*******************************************")
+        # print ("["+request.remote_addr+"_"+str(id)+"]")
+        # print (query)
+        # print ("")
+        # print (response)
+        # print ("*******************************************")
+        # return response
+
+    """
+    Obsługuje zarówno tradycyjny (blokujący) request,
+    jak i streaming SSE jeśli w payload pojawi się "stream": true.
+    """
+    data = request.get_json()
+    query = data["query"]
+    session_id = data["id"]
+    user = data["user"]
+    do_stream = data.get("stream", False)
+
+    # Przygotuj historię i wiadomości dla modelu
+    history = get_history(request.remote_addr, user, session_id, -HISTORY_SIZE)
+    messages = []
+    add_initial_system_message(messages)
+    add_user_ai_messages(messages, history)
+    add_user_message(messages, query)
+
+    if not do_stream:
+        # tryb blokujący: zwróć pełną odpowiedź na raz
+        response_text = (model | StrOutputParser()).invoke(messages)
+        history.append(("HumanMessage", query))
+        history.append(("AIMessage", response_text))
+        save_history(request.remote_addr, user, session_id, history)
+        return response_text
+
+    # streaming mode: SSE token-po-tokenie
+    def generate():
+        # Generator tokenów z Twojego LLM-a
+        stream = model.invoke_stream(messages, streaming=True)
+        full_resp = []
+        for token in stream:
+            # token może być stringiem lub obiektem z .text
+            part = token if isinstance(token, str) else token.text
+            full_resp.append(part)
+            yield f"data: {part}\n\n"
+        # po zakończeniu streamu zapisz całość do historii
+        history.append(("HumanMessage", query))
+        history.append(("AIMessage", "".join(full_resp)))
+        save_history(request.remote_addr, user, session_id, history)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream'
+    )
+
+
     #else:
      #   return "Your IP is not in allowed list!", 403
 
