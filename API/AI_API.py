@@ -332,30 +332,30 @@ if __name__ == "__main__":
     # Answer question prompt
     # This system prompt helps the AI understand that it should provide concise answers
     # based on the retrieved context and indicates what to do if the answer is unknown
-    qa_system_prompt = (
-        "You are an assistant for question-answering tasks. Use "
-        "the following pieces of retrieved context to answer the "
-        "question. If you don't know the answer, just say that you "
-        "don't know. Use ONE sentences maximum and keep the answer "
-        "concise."
-        "\n\n"
-        "{context}"
-    )
+    #qa_system_prompt = (
+    #    "You are an assistant for question-answering tasks. Use "
+    #    "the following pieces of retrieved context to answer the "
+    #    "question. If you don't know the answer, just say that you "
+    #    "don't know. Use ONE sentences maximum and keep the answer "
+    #    "concise."
+    #    "\n\n"
+    #    "{context}"
+    #)
 
     # Create a prompt template for answering questions
-    qa_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", qa_system_prompt),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ]
-    )
+    #qa_prompt = ChatPromptTemplate.from_messages(
+    #    [
+    #        ("system", qa_system_prompt),
+    #        MessagesPlaceholder("chat_history"),
+    #        ("human", "{input}"),
+    #    ]
+    #)
 
 
-    question_answer_chain = create_stuff_documents_chain(model, qa_prompt)
+    #question_answer_chain = create_stuff_documents_chain(model, qa_prompt)
 
-    rag_chain = create_retrieval_chain( history_aware_retriever, question_answer_chain)
-    rag_chain_web = create_retrieval_chain( history_aware_retriever_web, question_answer_chain)
+    #rag_chain = create_retrieval_chain( history_aware_retriever, question_answer_chain)
+    #rag_chain_web = create_retrieval_chain( history_aware_retriever_web, question_answer_chain)
 
 
 
