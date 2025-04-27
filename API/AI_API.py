@@ -195,7 +195,7 @@ def query_rag(query_text: str, ip, user, id, do_stream=False):
     #print(messages)
    
    
-    # Send to model
+    ##Send to model
 
     chain = model | output_parser
     if not do_stream:
