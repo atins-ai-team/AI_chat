@@ -39,7 +39,6 @@ const Chat: React.FC = () => {
       });
 
       if (!res.body) {
-        // fallback: cała odpowiedź za jednym zamachem
         return await res.text();
       }
 
@@ -55,11 +54,10 @@ const Chat: React.FC = () => {
         if (value) {
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop()!; // ostatnia linia może być niepełna
+          buffer = lines.pop()!;
 
           for (const line of lines) {
             if (line.startsWith("data:")) {
-              // **TU jest zmiana**: nie trimujemy, bo tracimy wiodące spacje
               const chunk = line.slice(6);
               aiText += chunk;
 
