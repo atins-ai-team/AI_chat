@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,9 +13,7 @@ import { formSchema } from "@/utils/schema";
 import { z } from "zod";
 import { Textarea } from "./ui/textarea";
 import { useMutation } from "@tanstack/react-query";
-import { fetchAIResponse } from "@/lib/utils";
 import { Loader } from "lucide-react";
-import TextSkeleton from "./TextSkeleton";
 import ReactMarkdown from "react-markdown";
 
 type Message = {
@@ -25,30 +23,73 @@ type Message = {
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const mutation = useMutation({
-    mutationFn: fetchAIResponse,
-    onMutate: async (newMessage: string) => {
+  const mutation = useMutation<string, Error, string>({
+    mutationFn: async (query) => {
+      const res = await fetch("http://localhost:8001/query_AI", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "1",
+          user: "1",
+          query,
+          stream: true,
+        }),
+      });
+
+      if (!res.body) {
+        // fallback: cała odpowiedź za jednym zamachem
+        return await res.text();
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let aiText = "";
+      let buffer = "";
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop()!; // ostatnia linia może być niepełna
+
+          for (const line of lines) {
+            if (line.startsWith("data:")) {
+              // **TU jest zmiana**: nie trimujemy, bo tracimy wiodące spacje
+              const chunk = line.slice(6);
+              aiText += chunk;
+
+              setMessages((prev) => {
+                const copy = [...prev];
+                copy[copy.length - 1] = { user: "AI", text: aiText };
+                return copy;
+              });
+            }
+          }
+        }
+      }
+
+      return aiText;
+    },
+
+    onMutate: (newMessage) => {
       setMessages((prev) => [
         ...prev,
         { user: "User", text: newMessage },
         { user: "AI", text: "" },
       ]);
     },
-    onSuccess: (data) => {
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = {
-          user: "AI",
-          text: data,
-        };
-        return newMessages;
-      });
+
+    onError: (err) => {
+      console.error("Błąd podczas zapytania:", err);
     },
 
-    onError: (error) => {
-      console.error("Błąd podczas zapytania:", error);
+    onSuccess: () => {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     },
   });
 
@@ -61,16 +102,15 @@ const Chat: React.FC = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    if (values.query.trim() === "") return;
-    mutation.mutate(values.query);
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const q = values.query.trim();
+    if (!q) return;
+    mutation.mutate(q);
     form.resetField("query");
-  }
+  };
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
@@ -89,18 +129,18 @@ const Chat: React.FC = () => {
                 : "w-full self-start leading-7"
             }`}
           >
-            <div className="prose dark:prose-invert max-w-none">
+            <div className="whitespace-normal break-words max-w-none">
               <ReactMarkdown>{message.text}</ReactMarkdown>
             </div>
           </div>
         ))}
-        {mutation.isPending && <TextSkeleton />}
         <div ref={scrollRef} />
       </div>
 
       {messages.length === 0 && (
         <p className="text-center text-lg md:text-2xl">How can I help you?</p>
       )}
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}

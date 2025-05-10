@@ -21,14 +21,14 @@ services:
       - 11434:11434
     env_file:
       - "models.env"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities:
-                - gpu
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities:
+    #             - gpu
 
     pull_policy: always
     tty: true
