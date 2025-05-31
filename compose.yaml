@@ -1,43 +1,56 @@
+version: "3.9"
+
 name: AI_chat
 
 networks:
-  ai_chat_network: # Definicja sieci
+  ai_chat_network:
     driver: bridge
 
 volumes:
   ollama:
 
 services:
+  init_runner:
+    container_name: init_runner
+    image: ollama/ollama
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    volumes:
+      - ./ollama/entrypoint.sh:/entrypoint.sh
+      - ollama:/root/.ollama  # jeśli potrzebne
+    networks:
+      - ai_chat_network
+    restart: "no"  # <-- bardzo ważne
+    depends_on: []
+    env_file:
+      - "models.env"
+
   ollama:
     container_name: ollama
     image: ollama/ollama
-    entrypoint: ["/usr/bin/bash", "/entrypoint.sh"]
     networks:
       - ai_chat_network
     volumes:
       - ollama:/root/.ollama
-      - ./ollama/entrypoint.sh:/entrypoint.sh
     ports:
       - 11434:11434
     env_file:
       - "models.env"
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities:
-    #             - gpu
-
-    pull_policy: always
+    depends_on:
+      init_runner:
+        condition: service_completed_successfully
     tty: true
     restart: always
+    deploy:
+       resources:
+         reservations:
+           devices:
+             - driver: nvidia
+               count: all
+               capabilities:
+                 - gpu
 
   ai_api:
     container_name: ai_api
-    depends_on:
-      - ollama
     ports:
       - 8001:8001
     environment:
@@ -52,13 +65,15 @@ services:
     tty: true
     volumes:
       - ./API:/python-docker
+    depends_on:
+      - ollama
 
   frontend:
-    depends_on:
-      - ai_api
     build:
       context: ./Front
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     container_name: chatatins-front
+    depends_on:
+      - ai_api

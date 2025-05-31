@@ -17,4 +17,5 @@ ollama pull $MODEL_EMBEDDING
 echo " Done!"
 
 # Wait for Ollama process to finish.
-wait $pid
+#wait $pid
+echo 0
